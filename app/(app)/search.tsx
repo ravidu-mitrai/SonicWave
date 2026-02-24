@@ -27,7 +27,7 @@ export default function SearchScreen() {
       setFilteredData(mockTracks);
     } else {
       // Filter the data based on track, artist, or collection name
-      const lowerCaseQuery = searchQuery.toLowerCase();
+      const lowerCaseQuery = debouncedQuery.toLowerCase();
       const results = mockTracks.filter((track) => 
         track.trackName.toLowerCase().includes(lowerCaseQuery) ||
         track.artistName.toLowerCase().includes(lowerCaseQuery) ||
