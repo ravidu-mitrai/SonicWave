@@ -1,40 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, TextInput, FlatList, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
 import TrackCard from '../../components/TrackCard';
-import { mockTracks } from '../../constants/mockData';
 import { Track } from '../../types';
+import { fetchTracks } from '../../api/itunesApi'; 
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [filteredData, setFilteredData] = useState<Track[]>(mockTracks);
+  const [filteredData, setFilteredData] = useState<Track[]>([]);
+  const [isLoading, setIsLoading] = useState(false); // Add loading state
 
   // The Debounce Logic
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 500); // Waits 500ms after the user stops typing
+    }, 500); 
 
-    // Cleanup function: clears the timer if the user types again before 500ms is up
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // The Multi-Category Search Logic
+  // The LIVE Multi-Category Search Logic
   useEffect(() => {
-    if (debouncedQuery.trim() === '') {
-      // If the search is empty, show all mock tracks
-      setFilteredData(mockTracks);
-    } else {
-      // Filter the data based on track, artist, or collection name
-      const lowerCaseQuery = debouncedQuery.toLowerCase();
-      const results = mockTracks.filter((track) => 
-        track.trackName.toLowerCase().includes(lowerCaseQuery) ||
-        track.artistName.toLowerCase().includes(lowerCaseQuery) ||
-        track.collectionName.toLowerCase().includes(lowerCaseQuery)
-      );
+    const getSearchResults = async () => {
+      if (debouncedQuery.trim() === '') {
+        // If the search is empty, clear the list instead of fetching
+        setFilteredData([]);
+        return;
+      }
+
+      setIsLoading(true); // Start the spinner
+      const results = await fetchTracks(debouncedQuery); // Fetch real data!
       setFilteredData(results);
-    }
+      setIsLoading(false); // Stop the spinner
+    };
+
+    getSearchResults();
   }, [debouncedQuery]);
 
   return (
@@ -49,7 +50,7 @@ export default function SearchScreen() {
             onChangeText={setSearchQuery}
             placeholderTextColor="#888"
           />
-         
+          
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
               <Ionicons name="close-circle" size={20} color="#888" style={styles.clearIcon} />
@@ -58,20 +59,29 @@ export default function SearchScreen() {
         </View>
       </View>
       
-      <FlatList
-        data={filteredData}
-        keyExtractor={(item) => item.trackId.toString()}
-        renderItem={({ item }) => <TrackCard track={item} />}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="musical-notes-outline" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>
-              No results found for "{debouncedQuery}"
-            </Text>
-          </View>
-        }
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1a1a1a" />
+          <Text style={styles.loadingText}>Searching iTunes...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredData}
+          keyExtractor={(item) => item.trackId.toString()}
+          renderItem={({ item }) => <TrackCard track={item} />}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            debouncedQuery !== '' ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="musical-notes-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyText}>
+                  No results found for "{debouncedQuery}"
+                </Text>
+              </View>
+            ) : null // Show nothing if the user hasn't typed anything
+          }
+        />
+      )}
     </View>
   );
 }
@@ -120,5 +130,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
+  },
+  loadingContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center'
+  },
+  loadingText: { 
+    marginTop: 12, 
+    fontSize: 14, 
+    color: '#666' 
   },
 });
