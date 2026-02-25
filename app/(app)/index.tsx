@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dimensions,
   FlatList,
@@ -7,23 +7,52 @@ import {
   Text,
   View,
   Image,
+  ActivityIndicator
 } from "react-native";
 import TrackCard from "../../components/TrackCard";
-import { mockTracks } from "../../constants/mockData";
+import { Track } from "../../types";
+import { fetchTracks } from "../../api/itunesApi"; 
 
 const { width } = Dimensions.get("window");
 const PAGE_WIDTH = width * 0.85;
 
 export default function DiscoverScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [liveTracks, setLiveTracks] = useState<Track[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const groupedTracks: (typeof mockTracks)[] = [];
-  for (let i = 0; i < mockTracks.length; i += 2) {
-    groupedTracks.push(mockTracks.slice(i, i + 2));
+  // Fetch live data on mount
+  useEffect(() => {
+    const loadDiscoverData = async () => {
+      setIsLoading(true);
+      // Fetch some default trending data
+      const data = await fetchTracks("Top Hits"); 
+      setLiveTracks(data);
+      setIsLoading(false);
+    };
+
+    loadDiscoverData();
+  }, []);
+
+  // Show full screen loader while the initial fetch happens
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#1a1a1a" />
+        <Text style={{ marginTop: 12, color: '#888' }}>Loading Discover...</Text>
+      </View>
+    );
   }
 
-  const recentTracks = mockTracks.slice(0, 4);
-  const favoriteTracks = mockTracks.slice(2, 6);
+  // slice the LIVE data
+  const groupedTracks: Track[][] = [];
+  for (let i = 0; i < liveTracks.length; i += 2) {
+    groupedTracks.push(liveTracks.slice(i, i + 2));
+  }
+
+  // just grab different slices of the live data for now to display the UI
+  const recentTracks = liveTracks.slice(0, 4);
+  const favoriteTracks = liveTracks.slice(4, 8); // this with Redux 
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -55,7 +84,6 @@ export default function DiscoverScreen() {
         }}
       />
         
-
       <View style={styles.dotsContainer}>
         {groupedTracks.map((_, index) => (
           <View
@@ -64,7 +92,6 @@ export default function DiscoverScreen() {
           />
         ))}
       </View>
-
       
       <View style={styles.section}>
         <Text style={styles.sectionTitle}> Recently Searched</Text>
@@ -143,8 +170,6 @@ const styles = StyleSheet.create({
     width: 20,
     borderRadius: 4,
   },
-
-  // ── Section ──
   section: {
     marginTop: 32,
   },
@@ -155,8 +180,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 14,
   },
-
-  // ── Small card (Recently Searched) ──
   smallCard: {
     width: 110,
     backgroundColor: "#fff",
@@ -184,8 +207,6 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 2,
   },
-
-  // ── Favorites ──
   favoriteList: {
     paddingHorizontal: 20,
     paddingBottom: 40,
