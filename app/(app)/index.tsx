@@ -12,6 +12,7 @@ import {
 import TrackCard from "../../components/TrackCard";
 import { Track } from "../../types";
 import { fetchTracks } from "../../api/itunesApi"; 
+import CustomHeader from "@/components/CustomHeader";
 
 const { width } = Dimensions.get("window");
 const PAGE_WIDTH = width * 0.85;
@@ -55,6 +56,8 @@ export default function DiscoverScreen() {
   const favoriteTracks = liveTracks.slice(4, 8); // this with Redux 
 
   return (
+    <>
+    <CustomHeader title="Discover" />
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}> Discover </Text>
       <Text style={styles.subtitle}> Trending tracks for you </Text>
@@ -128,6 +131,7 @@ export default function DiscoverScreen() {
         </View>
       </View>
     </ScrollView>
+    </>
   );
 }
 
