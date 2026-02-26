@@ -3,11 +3,14 @@ import { View, FlatList, StyleSheet, Text } from 'react-native';
 import TrackCard from '../../components/TrackCard';
 import { mockTracks } from '../../constants/mockData';
 import { Ionicons } from '@expo/vector-icons';
+import CustomHeader from '@/components/CustomHeader';
 
 export default function FavoritesScreen() {
   const mockFavorites = mockTracks.slice(0, 2);
 
   return (
+    <>
+    <CustomHeader title="Favorite" />
     <View style={styles.container}>
       <FlatList
         data={mockFavorites}
@@ -23,6 +26,7 @@ export default function FavoritesScreen() {
         }
       />
     </View>
+    </>
   );
 }
 

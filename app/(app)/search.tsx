@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import TrackCard from '../../components/TrackCard';
 import { Track } from '../../types';
 import { fetchTracks } from '../../api/itunesApi'; 
+import CustomHeader from '@/components/CustomHeader';
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +40,8 @@ export default function SearchScreen() {
   }, [debouncedQuery]);
 
   return (
+    <>
+    <CustomHeader title="Search" />
     <View style={styles.container}>
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
@@ -83,6 +86,7 @@ export default function SearchScreen() {
         />
       )}
     </View>
+    </>
   );
 }
 
