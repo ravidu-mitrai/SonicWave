@@ -10,6 +10,12 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
 
+import { Provider } from 'react-redux'; 
+import { store } from '../store'; 
+import { setFavorites } from '../store/favoritesSlice';
+import { useAppDispatch } from '../store/hooks'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { useColorScheme } from "@/components/useColorScheme";
 
 export {
@@ -24,6 +30,26 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+function AppHydrator({ children }: { children: React.ReactNode }) {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const savedFavorites = await AsyncStorage.getItem('sonicwave_favorites');
+        if (savedFavorites) {
+          dispatch(setFavorites(JSON.parse(savedFavorites)));
+        }
+      } catch (error) {
+        console.error("Failed to load favorites", error);
+      }
+    };
+    loadFavorites();
+  }, [dispatch]);
+
+  return <>{children}</>;
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -46,7 +72,14 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    // Wrap the entire app in the Redux Provider
+    <Provider store={store}>
+      <AppHydrator>
+        <RootLayoutNav />
+      </AppHydrator>
+    </Provider>
+  );
 }
 
 function RootLayoutNav() {
