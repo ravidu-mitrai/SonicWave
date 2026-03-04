@@ -1,31 +1,30 @@
 import React from 'react';
 import { View, FlatList, StyleSheet, Text } from 'react-native';
 import TrackCard from '../../components/TrackCard';
-import { mockTracks } from '../../constants/mockData';
 import { Ionicons } from '@expo/vector-icons';
-import CustomHeader from '@/components/CustomHeader';
+import { useAppSelector } from '../../store/hooks'; 
+import CustomHeader from '../../components/CustomHeader';
 
 export default function FavoritesScreen() {
-  const mockFavorites = mockTracks.slice(0, 2);
+  const favoriteTracks = useAppSelector((state) => state.favorites.items);
 
   return (
     <>
-    <CustomHeader title="Favorite" />
-    <View style={styles.container}>
-      <FlatList
-        data={mockFavorites}
-        keyExtractor={(item) => item.trackId.toString()}
-        renderItem={({ item }) => <TrackCard track={item} />}
-        contentContainerStyle={styles.listContent}
-  
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="musical-notes-outline" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>No favorite tracks yet.</Text>
-          </View>
-        }
-      />
-    </View>
+      <CustomHeader title="Favorites" />
+      <View style={styles.container}>
+        <FlatList
+          data={favoriteTracks} 
+          keyExtractor={(item) => item.trackId.toString()}
+          renderItem={({ item }) => <TrackCard track={item} />}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="heart-dislike-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyText}>No favorite tracks yet.</Text>
+            </View>
+          }
+        />
+      </View>
     </>
   );
 }

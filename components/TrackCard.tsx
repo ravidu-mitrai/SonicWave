@@ -3,14 +3,21 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { addFavorite, removeFavorite } from '../store/favoritesSlice';
 
 interface TrackCardProps {
   track: Track;
 }
 
 export default function TrackCard({ track }: TrackCardProps) {
-  const [liked, setLiked] = useState(false);
+  // const [liked, setLiked] = useState(false);
   const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const isLiked = useAppSelector((state) => 
+    state.favorites.items.some((item) => item.trackId === track.trackId)
+  );
 
   const handlePress = () => {
     router.push({
@@ -25,6 +32,14 @@ export default function TrackCard({ track }: TrackCardProps) {
     });
   };
 
+  const toggleFavorite = () => {
+    if (isLiked) {
+      dispatch(removeFavorite(track.trackId));
+    } else {
+      dispatch(addFavorite(track));
+    }
+  };
+
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.75} onPress={handlePress}>
       <Image source={{ uri: track.artworkUrl100 }} style={styles.artwork} />
@@ -34,11 +49,11 @@ export default function TrackCard({ track }: TrackCardProps) {
       </View>
       <View style={styles.actions}>
         <Ionicons name="play-circle-outline" size={26} color="#555" style={styles.playIcon} />
-        <TouchableOpacity onPress={() => setLiked(!liked)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={toggleFavorite} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <FontAwesome
-            name={liked ? 'heart' : 'heart-o'}
+            name={isLiked ? 'heart' : 'heart-o'}
             size={20}
-            color={liked ? '#e74c3c' : '#bbb'}
+            color={isLiked ? '#e74c3c' : '#bbb'}
           />
         </TouchableOpacity>
       </View>

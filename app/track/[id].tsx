@@ -11,12 +11,36 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import CustomHeader from '@/components/CustomHeader';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { addFavorite, removeFavorite } from '../../store/favoritesSlice';
 
 export default function TrackDetailScreen() {
   const router = useRouter();
-  const { trackName, artistName, artworkUrl, previewUrl } = useLocalSearchParams();
+  const { id, trackName, artistName, artworkUrl, previewUrl } = useLocalSearchParams();
 
-  const [liked, setLiked] = useState(false);
+  // const [liked, setLiked] = useState(false);
+  const trackIdNum = Number(id); 
+  const dispatch = useAppDispatch();
+
+  const isLiked = useAppSelector((state) => 
+    state.favorites.items.some((item) => item.trackId === trackIdNum)
+  );
+
+  const toggleFavorite = () => {
+    if (isLiked) {
+      dispatch(removeFavorite(trackIdNum));
+    } else {
+      // Reconstruct the track object from the URL params to save to Redux
+      dispatch(addFavorite({
+        trackId: trackIdNum,
+        trackName: trackName as string,
+        artistName: artistName as string,
+        collectionName: 'Unknown Album', // Default fallback
+        artworkUrl100: (artworkUrl as string).replace('300x300', '100x100'), // Revert to standard size for the store
+        previewUrl: previewUrl as string,
+      }));
+    }
+  };
 
   const player = useAudioPlayer(previewUrl as string);
   const status = useAudioPlayerStatus(player);
@@ -55,11 +79,11 @@ export default function TrackDetailScreen() {
           <Text style={styles.trackTitle} numberOfLines={1}>{trackName}</Text>
           <Text style={styles.artistName}>{artistName}</Text>
         </View>
-        <TouchableOpacity onPress={() => setLiked(!liked)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity onPress={toggleFavorite} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <FontAwesome
-            name={liked ? 'heart' : 'heart-o'}
+            name={isLiked ? 'heart' : 'heart-o'}
             size={24}
-            color={liked ? '#e74c3c' : '#ccc'}
+            color={isLiked ? '#e74c3c' : '#ccc'}
           />
         </TouchableOpacity>
       </View>
