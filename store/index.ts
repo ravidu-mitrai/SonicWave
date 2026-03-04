@@ -2,14 +2,14 @@ import { configureStore, createListenerMiddleware, isAnyOf } from '@reduxjs/tool
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import favoritesReducer, { addFavorite, removeFavorite } from './favoritesSlice';
 
-// 1. Create a listener middleware to watch for specific actions
+// Create a listener middleware to watch for specific actions
 const listenerMiddleware = createListenerMiddleware();
 
-// 2. Tell it to listen for either 'addFavorite' or 'removeFavorite'
+// Tell it to listen for either 'addFavorite' or 'removeFavorite'
 listenerMiddleware.startListening({
   matcher: isAnyOf(addFavorite, removeFavorite),
   effect: async (action, listenerApi) => {
-    // 3. Whenever those actions happen, grab the latest state and save it locally
+    // Whenever those actions happen, grab the latest state and save it locally
     const state = listenerApi.getState() as RootState;
     try {
       await AsyncStorage.setItem('sonicwave_favorites', JSON.stringify(state.favorites.items));
