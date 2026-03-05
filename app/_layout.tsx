@@ -15,6 +15,7 @@ import { store } from '../store';
 import { setFavorites } from '../store/favoritesSlice';
 import { useAppDispatch } from '../store/hooks'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setHistory } from "@/store/historySlice";
 
 import { useColorScheme } from "@/components/useColorScheme";
 
@@ -41,6 +42,12 @@ function AppHydrator({ children }: { children: React.ReactNode }) {
         if (savedFavorites) {
           dispatch(setFavorites(JSON.parse(savedFavorites)));
         }
+
+        const savedHistory = await AsyncStorage.getItem('sonicwave_history');
+        if (savedHistory) {
+          dispatch(setHistory(JSON.parse(savedHistory)));
+        }
+        
       } catch (error) {
         console.error("Failed to load favorites", error);
       }
