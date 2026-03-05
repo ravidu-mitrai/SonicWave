@@ -36,6 +36,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 10,
+    marginRight: 10,
+    marginLeft: 10,
   },
   emptyContainer: {
     flex: 1,
