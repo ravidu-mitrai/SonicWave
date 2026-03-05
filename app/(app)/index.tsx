@@ -15,6 +15,7 @@ import {
 import { fetchTracks } from "../../api/itunesApi";
 import TrackCard from "../../components/TrackCard";
 import { Track } from "../../types";
+import { useAppSelector } from '../../store/hooks';
 
 const { width } = Dimensions.get("window");
 const PAGE_WIDTH = width * 0.85;
@@ -25,6 +26,10 @@ export default function DiscoverScreen() {
   const [isLoading, setIsLoading] = useState(true);
 
   const router = useRouter();
+  // just grab different slices of the live data for now to display the UI
+  const recentTracks = useAppSelector((state) => state.history.tracks);
+  // const favoriteTracks = liveTracks.slice(4, 8); // this with Redux
+  const favoriteTracks = useAppSelector((state) => state.favorites.items).slice(0, 4);
 
   // Fetch live data on mount
   useEffect(() => {
@@ -62,16 +67,11 @@ export default function DiscoverScreen() {
     groupedTracks.push(liveTracks.slice(i, i + 2));
   }
 
-  // just grab different slices of the live data for now to display the UI
-  const recentTracks = liveTracks.slice(0, 4);
-  const favoriteTracks = liveTracks.slice(4, 8); // this with Redux
-
   return (
     <>
       <CustomHeader title="Discover" />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}> Discover </Text>
-        <Text style={styles.subtitle}> Trending tracks for you </Text>
+        <Text style={styles.sectionTitle}> Trending tracks for you </Text>
 
         <FlatList
           data={groupedTracks}
@@ -107,56 +107,54 @@ export default function DiscoverScreen() {
           ))}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}> Recently Searched</Text>
-          <FlatList
-            data={recentTracks}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => `recent-${item.trackId}`}
-            nestedScrollEnabled={true}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.smallCard}
-                activeOpacity={0.8}
-                onPress={() => {
-                  router.push({
-                    pathname: "/track/[id]",
-                    params: {
-                      id: item.trackId,
-                      trackName: item.trackName,
-                      artistName: item.artistName,
-                      artworkUrl: item.artworkUrl100.replace(
-                        "100x100",
-                        "300x300",
-                      ),
-                      previewUrl: item.previewUrl,
-                    },
-                  });
-                }}
-              >
-                <Image
-                  source={{ uri: item.artworkUrl100 }}
-                  style={styles.smallArtwork}
-                />
-                <Text style={styles.smallTrackName} numberOfLines={1}>
-                  {item.trackName}
-                </Text>
-                <Text style={styles.smallArtistName} numberOfLines={1}>
-                  {item.artistName}
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+        {recentTracks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}> Recently Viewed</Text>
+            <FlatList
+              data={recentTracks}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => `recent-${item.trackId}`}
+              nestedScrollEnabled={true}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 10 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.smallCard}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/track/[id]",
+                      params: {
+                        id: item.trackId,
+                        trackName: item.trackName,
+                        artistName: item.artistName,
+                        artworkUrl: item.artworkUrl100.replace("100x100", "300x300"),
+                        previewUrl: item.previewUrl,
+                      },
+                    });
+                  }}
+                >
+                  <Image source={{ uri: item.artworkUrl100 }} style={styles.smallArtwork} />
+                  <Text style={styles.smallTrackName} numberOfLines={1}>{item.trackName}</Text>
+                  <Text style={styles.smallArtistName} numberOfLines={1}>{item.artistName}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}> Your Favorites</Text>
           <View style={styles.favoriteList}>
-            {favoriteTracks.map((track) => (
-              <TrackCard key={`fav-${track.trackId}`} track={track} />
-            ))}
+            {favoriteTracks.length > 0 ? (
+              favoriteTracks.map((track) => (
+                <TrackCard key={`fav-${track.trackId}`} track={track} />
+              ))
+            ) : (
+              <Text style={{ paddingHorizontal: 20, color: '#888' }}>
+                You haven't added any favorites yet. Tap the heart icon on a track to save it here!
+              </Text>
+            )}
           </View>
         </View>
       </ScrollView>

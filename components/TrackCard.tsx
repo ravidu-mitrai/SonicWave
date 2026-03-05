@@ -5,6 +5,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addFavorite, removeFavorite } from '../store/favoritesSlice';
+import { addTrack } from '../store/historySlice';
 
 interface TrackCardProps {
   track: Track;
@@ -20,6 +21,7 @@ export default function TrackCard({ track }: TrackCardProps) {
   );
 
   const handlePress = () => {
+    dispatch(addTrack(track));
     router.push({
       pathname: '/track/[id]',
       params: {
