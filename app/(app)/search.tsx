@@ -6,12 +6,18 @@ import { Track } from '../../types';
 import { fetchTracks } from '../../api/itunesApi'; 
 import CustomHeader from '@/components/CustomHeader';
 
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { addQuery } from '../../store/historySlice';
+
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [filteredData, setFilteredData] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(false); // Add loading state
 
+  const dispatch = useAppDispatch();
+  const recentSearches = useAppSelector((state) => state.history.queries);
+  
   // The Debounce Logic
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -31,9 +37,11 @@ export default function SearchScreen() {
       }
 
       setIsLoading(true); // Start the spinner
-      const results = await fetchTracks(debouncedQuery); // Fetch real data!
+      dispatch(addQuery(debouncedQuery)); 
+      
+      const results = await fetchTracks(debouncedQuery); 
       setFilteredData(results);
-      setIsLoading(false); // Stop the spinner
+      setIsLoading(false);
     };
 
     getSearchResults();
@@ -62,7 +70,24 @@ export default function SearchScreen() {
         </View>
       </View>
       
-      {isLoading ? (
+      {/* The UI to actually show the recent searches! */}
+      {searchQuery.trim() === '' && recentSearches.length > 0 ? (
+        <View style={styles.recentContainer}>
+          <Text style={styles.recentTitle}>Recent Searches</Text>
+          <View style={styles.chipsContainer}>
+            {recentSearches.map((term, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.chip}
+                onPress={() => setSearchQuery(term)} 
+              >
+                <Ionicons name="time-outline" size={16} color="#666" style={styles.chipIcon} />
+                <Text style={styles.chipText}>{term}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      ) : isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1a1a1a" />
           <Text style={styles.loadingText}>Searching iTunes...</Text>
@@ -81,7 +106,7 @@ export default function SearchScreen() {
                   No results found for "{debouncedQuery}"
                 </Text>
               </View>
-            ) : null // Show nothing if the user hasn't typed anything
+            ) : null 
           }
         />
       )}
@@ -123,6 +148,8 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: 10,
     flexGrow: 1,
+    marginLeft: 10,
+    marginRight: 10,
   },
   emptyContainer: {
     flex: 1,
@@ -145,4 +172,22 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     color: '#666' 
   },
+  recentContainer: { 
+    paddingHorizontal: 20, 
+    paddingTop: 24 
+  },
+  recentTitle: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: '#1a1a1a', 
+    marginBottom: 12 
+  },
+  chipsContainer: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    gap: 10
+  },
+  chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e0e0e0', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20 },
+  chipIcon: { marginRight: 6 },
+  chipText: { fontSize: 14, color: '#333' },
 });
