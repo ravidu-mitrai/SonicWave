@@ -13,6 +13,7 @@ import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import CustomHeader from '@/components/CustomHeader';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addFavorite, removeFavorite } from '../../store/favoritesSlice';
+import { formatTime } from '../../utils/timeFormat';
 
 export default function TrackDetailScreen() {
   const router = useRouter();
@@ -51,11 +52,11 @@ export default function TrackDetailScreen() {
   const progress = duration > 0 ? position / duration : 0;
 
   // format seconds -> m:ss
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
+  // const formatTime = (secs: number) => {
+  //   const m = Math.floor(secs / 60);
+  //   const s = Math.floor(secs % 60);
+  //   return `${m}:${s.toString().padStart(2, '0')}`;
+  // };
 
   return (
     <>
