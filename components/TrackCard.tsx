@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addFavorite, removeFavorite } from '../store/favoritesSlice';
 import { addTrack } from '../store/historySlice';
+import { downloadAudioToCache, removeAudioFromCache } from '../utils/fileCache';
 
 interface TrackCardProps {
   track: Track;
@@ -34,13 +35,16 @@ export default function TrackCard({ track }: TrackCardProps) {
     });
   };
 
-  const toggleFavorite = () => {
-    if (isLiked) {
-      dispatch(removeFavorite(track.trackId));
-    } else {
-      dispatch(addFavorite(track));
-    }
-  };
+  const toggleFavorite = async () => {
+  if (isLiked) {
+    dispatch(removeFavorite(track.trackId));
+    await removeAudioFromCache(track.trackId); // Delete from hard drive
+  } else {
+    dispatch(addFavorite(track));
+    // Download to hard drive (fire and forget, it happens in the background!)
+    await downloadAudioToCache(track.trackId, track.previewUrl); 
+  }
+};
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.75} onPress={handlePress}>
