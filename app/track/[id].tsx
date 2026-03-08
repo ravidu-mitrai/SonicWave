@@ -14,6 +14,10 @@ import CustomHeader from '@/components/CustomHeader';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addFavorite, removeFavorite } from '../../store/favoritesSlice';
 import { formatTime } from '../../utils/timeFormat';
+import { downloadAudioToCache, removeAudioFromCache } from '../../utils/fileCache';
+import { Track } from '@/types';
+import * as FileSystem from 'expo-file-system/legacy';
+import { getLocalAudioUri } from '../../utils/fileCache';
 
 export default function TrackDetailScreen() {
   const router = useRouter();
@@ -27,24 +31,79 @@ export default function TrackDetailScreen() {
     state.favorites.items.some((item) => item.trackId === trackIdNum)
   );
 
-  const toggleFavorite = () => {
+  // Jump forward 15 seconds
+  const skipForward = () => {
+    const newTime = position + 15;
+    // If skipping 15s pushes us past the song duration, just go to the very end
+    player.seekTo(newTime > duration ? duration : newTime);
+  };
+
+  // Jump backward 15 seconds
+  const skipBackward = () => {
+    const newTime = position - 15;
+    // If skipping back pushes us into negative time, just go back to 0 (the start)
+    player.seekTo(newTime < 0 ? 0 : newTime);
+  };
+
+  // const toggleFavorite = () => {
+  //   if (isLiked) {
+  //     dispatch(removeFavorite(trackIdNum));
+  //   } else {
+  //     // Reconstruct the track object from the URL params to save to Redux
+  //     dispatch(addFavorite({
+  //       trackId: trackIdNum,
+  //       trackName: trackName as string,
+  //       artistName: artistName as string,
+  //       collectionName: 'Unknown Album', // Default fallback
+  //       artworkUrl100: (artworkUrl as string).replace('300x300', '100x100'), // Revert to standard size for the store
+  //       previewUrl: previewUrl as string,
+  //     }));
+  //   }
+  // };
+
+  const toggleFavorite = async () => {
     if (isLiked) {
       dispatch(removeFavorite(trackIdNum));
+      await removeAudioFromCache(trackIdNum); // Use the number variable we created
     } else {
-      // Reconstruct the track object from the URL params to save to Redux
-      dispatch(addFavorite({
+      // 1. Reconstruct the track object from the URL params to save to Redux
+      const trackObj: Track = {
         trackId: trackIdNum,
         trackName: trackName as string,
         artistName: artistName as string,
-        collectionName: 'Unknown Album', // Default fallback
-        artworkUrl100: (artworkUrl as string).replace('300x300', '100x100'), // Revert to standard size for the store
+        collectionName: 'Unknown Album', 
+        artworkUrl100: (artworkUrl as string).replace('300x300', '100x100'),
         previewUrl: previewUrl as string,
-      }));
+      };
+      
+      dispatch(addFavorite(trackObj));
+      
+      // 2. Download using the individual string
+      await downloadAudioToCache(trackIdNum, previewUrl as string); 
     }
   };
 
-  const player = useAudioPlayer(previewUrl as string);
+  const player = useAudioPlayer(previewUrl as string); // Defaults to the web URL
   const status = useAudioPlayerStatus(player);
+
+  // NEW: The Smart Caching Logic
+  useEffect(() => {
+    const checkLocalCache = async () => {
+      const fileUri = getLocalAudioUri(trackIdNum);
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+
+      // If the file exists on the hard drive, hot-swap the audio source!
+      if (fileInfo.exists) {
+        player.replace(fileUri);
+        console.log('Now playing from local offline storage');
+      }
+    };
+
+  checkLocalCache();
+}, [trackIdNum]);
+
+  // const player = useAudioPlayer(previewUrl as string);
+  // const status = useAudioPlayerStatus(player);
 
   // progress 0–1
   const duration = status.duration ?? 0;
@@ -105,8 +164,8 @@ export default function TrackDetailScreen() {
       {/* Controls */}
       <View style={styles.controls}>
 
-        <TouchableOpacity style={styles.skipButton}>
-          <Ionicons name="play-skip-back" size={28} color="#1a1a1a" />
+        <TouchableOpacity style={styles.skipButton} onPress={skipBackward} activeOpacity={0.7}>
+          <Ionicons name="play-back" size={32} color="#1a1a1a" /> 
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -128,8 +187,8 @@ export default function TrackDetailScreen() {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.skipButton}>
-          <Ionicons name="play-skip-forward" size={28} color="#1a1a1a" />
+        <TouchableOpacity style={styles.skipButton} onPress={skipForward} activeOpacity={0.7}>
+          <Ionicons name="play-forward" size={32} color="#1a1a1a" />
         </TouchableOpacity>
       </View>
 

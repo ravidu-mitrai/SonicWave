@@ -15,9 +15,11 @@ import { store } from '../store';
 import { setFavorites } from '../store/favoritesSlice';
 import { useAppDispatch } from '../store/hooks'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setHistory } from "@/store/historySlice";
+import { setHistory } from '../store/historySlice';
 
-import { useColorScheme } from "@/components/useColorScheme";
+import { useColorScheme } from '../components/useColorScheme';
+import NetworkStatus from '../components/NetworkStatus';
+import { Audio } from 'expo-av';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -64,6 +66,24 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
+  useEffect(() => {
+    const configureBackgroundAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+        console.log("Background audio mode activated!");
+      } catch (error) {
+        console.error("Failed to set audio mode", error);
+      }
+    };
+
+    configureBackgroundAudio();
+  }, []);
+
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
@@ -82,6 +102,7 @@ export default function RootLayout() {
   return (
     // Wrap the entire app in the Redux Provider
     <Provider store={store}>
+      <NetworkStatus />
       <AppHydrator>
         <RootLayoutNav />
       </AppHydrator>

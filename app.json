@@ -14,9 +14,17 @@
       "backgroundColor": "#020A1C"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
     },
     "android": {
+      "permissions": [
+        "WAKE_LOCK"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/splash.png",
         "backgroundColor": "#020A1C"
