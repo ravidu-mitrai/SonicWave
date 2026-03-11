@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Colors } from '../constants/Styles'; // Updated import
 
 interface HeaderProps {
   title: string;
@@ -10,45 +11,59 @@ interface HeaderProps {
 
 export default function CustomHeader({ title, showBack = false }: HeaderProps) {
   const router = useRouter();
+  
+  const theme = useColorScheme() ?? 'dark'; 
+  const colors = Colors[theme];
+  
+  const styles = getStyles(colors);
 
   return (
     <View style={styles.header}>
       {showBack ? (
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-          <Ionicons name="chevron-back" size={28} color="#f5f5f5" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton} activeOpacity={0.7}>
+          <View style={styles.backButtonInner}>
+            <Ionicons name="chevron-back" size={12} color={colors.textPrimary} />
+          </View>
         </TouchableOpacity>
       ) : (
-        <View style={styles.spacer} /> 
+        <View style={styles.spacer} />
       )}
-      
       <Text style={styles.headerTitle}>{title}</Text>
-      
-      {/* Spacer to keep the title perfectly centered */}
       <View style={styles.spacer} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+// Wrap styles in a function
+const getStyles = (colors: typeof Colors.light) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60, 
+    paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: '#000000', 
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  iconButton: {
-    padding: 4,
-    color: '#f5f5f5',
+  backButtonInner: {
+    width: 26,
+    height: 26,
+    borderRadius: 17,
+    backgroundColor: colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  spacer: {
-    width: 36,
-  },
+  iconButton: {},
+  spacer: { width: 36 },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#f5f5f5',
+    color: colors.textPrimary,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
   },
 });
