@@ -21,7 +21,8 @@
           "audio"
         ]
       },
-      "bundleIdentifier": "com.anonymous.SonicWave"
+      "bundleIdentifier": "com.anonymous.SonicWave",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.anonymous.SonicWave",
