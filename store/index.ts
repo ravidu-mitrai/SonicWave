@@ -1,7 +1,7 @@
 import { configureStore, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import favoritesReducer, { addFavorite, removeFavorite } from './favoritesSlice';
-import historyReducer, { addQuery, addTrack } from './historySlice';
+import historyReducer, { addQuery, addTrack, removeQuery, clearQueries } from './historySlice';
 
 // Create a listener middleware to watch for specific actions
 const listenerMiddleware = createListenerMiddleware();
@@ -22,7 +22,8 @@ listenerMiddleware.startListening({
 
 // Listen for History changes
 listenerMiddleware.startListening({
-  matcher: isAnyOf(addQuery, addTrack),
+  // Added removeQuery and clearQueries to the listener!
+  matcher: isAnyOf(addQuery, addTrack, removeQuery, clearQueries),
   effect: async (action, listenerApi) => {
     const state = listenerApi.getState() as RootState;
     try {
