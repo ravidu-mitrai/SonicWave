@@ -47,6 +47,14 @@
       "expo-router",
       "expo-font",
       [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
         "expo-audio",
         {
           "supportsBackgroundPlayback": true
@@ -54,7 +62,8 @@
       ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true
