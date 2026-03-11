@@ -1,77 +1,137 @@
 import CustomHeader from "@/components/CustomHeader";
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useColorScheme,
 } from "react-native";
 import { fetchTracks } from "../../api/itunesApi";
 import TrackCard from "../../components/TrackCard";
+import { Colors, getCommonStyles } from "../../constants/Styles";
+import { addTrack } from "../../store/historySlice";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { Track } from "../../types";
-import { useAppSelector } from '../../store/hooks';
 
 const { width } = Dimensions.get("window");
 const PAGE_WIDTH = width * 0.85;
 
 export default function DiscoverScreen() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [liveTracks, setLiveTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const router = useRouter();
-  // just grab different slices of the live data for now to display the UI
-  const recentTracks = useAppSelector((state) => state.history.tracks);
-  // const favoriteTracks = liveTracks.slice(4, 8); // this with Redux
-  const favoriteTracks = useAppSelector((state) => state.favorites.items).slice(0, 4);
+  const [trendingTracks, setTrendingTracks] = useState<Track[]>([]);
+  const [topAlbums, setTopAlbums] = useState<Track[]>([]);
+  const [topSongs, setTopSongs] = useState<Track[]>([]);
 
-  // Fetch live data on mount
+  const recentTracks = useAppSelector((state) => state.history.tracks);
+  const favoriteTracks = useAppSelector((state) => state.favorites.items).slice(0, 5);
+
+  const netInfo = useNetInfo();
+
+  // ─── Dynamic Theme Setup ───
+  const theme = useColorScheme() ?? 'dark';
+  const colors = Colors[theme];
+  const commonStyles = getCommonStyles(colors);
+  const styles = getStyles(colors, commonStyles);
+
   useEffect(() => {
     const loadDiscoverData = async () => {
       setIsLoading(true);
-      // Fetch some default trending data
-      const data = await fetchTracks("Top Hits");
-      setLiveTracks(data);
-      setIsLoading(false);
+      if (netInfo.isConnected === false) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const [trending, albums, songs] = await Promise.all([
+          fetchTracks("Top Hits"),
+          fetchTracks("Best Albums"),
+          fetchTracks("Global Top 50"),
+        ]);
+        setTrendingTracks(trending);
+        setTopAlbums(albums);
+        setTopSongs(songs);
+      } catch (error) {
+        console.error("Failed to fetch discover data", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-
     loadDiscoverData();
-  }, []);
+  }, [netInfo.isConnected]);
 
-  // Show full screen loader while the initial fetch happens
   if (isLoading) {
     return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <ActivityIndicator size="large" color="#1a1a1a" />
-        <Text style={{ marginTop: 12, color: "#888" }}>
-          Loading Discover...
-        </Text>
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={styles.loadingText}>Curating your feed…</Text>
       </View>
     );
   }
 
-  // slice the LIVE data
   const groupedTracks: Track[][] = [];
-  for (let i = 0; i < liveTracks.length; i += 2) {
-    groupedTracks.push(liveTracks.slice(i, i + 2));
+  for (let i = 0; i < trendingTracks.length; i += 2) {
+    groupedTracks.push(trendingTracks.slice(i, i + 2));
   }
+
+  const renderSmallCardList = (data: Track[]) => (
+    <FlatList
+      data={data}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={(item, index) => `${item.trackId}-${index}`}
+      nestedScrollEnabled={true}
+      contentContainerStyle={styles.smallCardListContent}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={styles.smallCard}
+          activeOpacity={0.7}
+          onPress={() => {
+            dispatch(addTrack(item));
+            router.push({
+              pathname: "/track/[id]",
+              params: {
+                id: item.trackId,
+                trackName: item.trackName,
+                artistName: item.artistName,
+                artworkUrl: item.artworkUrl100.replace("100x100", "300x300"),
+                previewUrl: item.previewUrl,
+              },
+            });
+          }}
+        >
+          <Image source={{ uri: item.artworkUrl100 }} style={styles.smallArtwork} />
+          <Text style={styles.smallTrackName} numberOfLines={1}>
+            {item.trackName}
+          </Text>
+          <Text style={styles.smallArtistName} numberOfLines={1}>
+            {item.artistName}
+          </Text>
+        </TouchableOpacity>
+      )}
+    />
+  );
 
   return (
     <>
       <CustomHeader title="Discover" />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}> Trending tracks for you </Text>
+
+        {/* ── TRENDING HERO ── */}
+        <View style={styles.heroHeader}>
+          <Text style={styles.sectionTitle}>Trending Now</Text>
+          <Text style={styles.sectionSubtitle}>Curated for you today</Text>
+        </View>
 
         <FlatList
           data={groupedTracks}
@@ -79,8 +139,8 @@ export default function DiscoverScreen() {
           showsHorizontalScrollIndicator={false}
           keyExtractor={(_, index) => index.toString()}
           snapToInterval={PAGE_WIDTH + 12}
-          decelerationRate={"fast"}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
+          decelerationRate="fast"
+          contentContainerStyle={styles.heroListContent}
           scrollEnabled={true}
           nestedScrollEnabled={true}
           renderItem={({ item }) => (
@@ -92,12 +152,13 @@ export default function DiscoverScreen() {
           )}
           onMomentumScrollEnd={(e) => {
             const index = Math.round(
-              e.nativeEvent.contentOffset.x / (PAGE_WIDTH + 12),
+              e.nativeEvent.contentOffset.x / (PAGE_WIDTH + 12)
             );
             setActiveIndex(index);
           }}
         />
 
+        {/* Dots */}
         <View style={styles.dotsContainer}>
           {groupedTracks.map((_, index) => (
             <View
@@ -107,79 +168,71 @@ export default function DiscoverScreen() {
           ))}
         </View>
 
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* ── RECENTLY VIEWED ── */}
         {recentTracks.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}> Recently Viewed</Text>
-            <FlatList
-              data={recentTracks}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => `recent-${item.trackId}`}
-              nestedScrollEnabled={true}
-              contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 10 }}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.smallCard}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    router.push({
-                      pathname: "/track/[id]",
-                      params: {
-                        id: item.trackId,
-                        trackName: item.trackName,
-                        artistName: item.artistName,
-                        artworkUrl: item.artworkUrl100.replace("100x100", "300x300"),
-                        previewUrl: item.previewUrl,
-                      },
-                    });
-                  }}
-                >
-                  <Image source={{ uri: item.artworkUrl100 }} style={styles.smallArtwork} />
-                  <Text style={styles.smallTrackName} numberOfLines={1}>{item.trackName}</Text>
-                  <Text style={styles.smallArtistName} numberOfLines={1}>{item.artistName}</Text>
-                </TouchableOpacity>
-              )}
-            />
+            <Text style={styles.sectionTitle}>Recently Viewed</Text>
+            {renderSmallCardList(recentTracks)}
           </View>
         )}
 
+        {/* ── TOP ALBUMS ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}> Your Favorites</Text>
-          <View style={styles.favoriteList}>
-            {favoriteTracks.length > 0 ? (
-              favoriteTracks.map((track) => (
-                <TrackCard key={`fav-${track.trackId}`} track={track} />
-              ))
-            ) : (
-              <Text style={{ paddingHorizontal: 20, color: '#888' }}>
-                You haven't added any favorites yet. Tap the heart icon on a track to save it here!
-              </Text>
-            )}
-          </View>
+          <Text style={styles.sectionTitle}>Top Albums</Text>
+          {renderSmallCardList(topAlbums)}
         </View>
+
+        {/* ── GLOBAL TOP SONGS ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Global Top Songs</Text>
+          {renderSmallCardList(topSongs)}
+        </View>
+
+        {/* ── YOUR FAVORITES ── */}
+        {favoriteTracks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Favorites</Text>
+            <View style={styles.favoriteList}>
+              {favoriteTracks.map((track) => (
+                <TrackCard key={`fav-${track.trackId}`} track={track} />
+              ))}
+            </View>
+          </View>
+        )}
+
+        <View style={{ height: 48 }} />
       </ScrollView>
     </>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof Colors.light, commonStyles: any) => StyleSheet.create({
   container: {
+    ...commonStyles.screenContainer,
+    paddingTop: 8,
+  },
+  loadingScreen: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 14,
+    fontSize: 13,
+    color: colors.textSecondary,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  heroHeader: {
     paddingTop: 20,
+    marginBottom: 10,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1a1a1a",
+  heroListContent: {
     paddingHorizontal: 20,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#888",
-    paddingHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 24,
   },
   page: {
     marginRight: 12,
@@ -188,58 +241,61 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 16,
+    marginBottom: 4,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#ccc",
-    marginHorizontal: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.textTertiary,
+    marginHorizontal: 3,
   },
   activeDot: {
-    backgroundColor: "#1a1a1a",
-    width: 20,
-    borderRadius: 4,
+    backgroundColor: colors.accent,
+    width: 22,
+    borderRadius: 3,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: 20,
+    marginTop: 28,
+    marginBottom: 4,
   },
   section: {
-    marginTop: 32,
+    marginTop: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1a1a1a",
+    ...commonStyles.sectionTitle,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
     paddingHorizontal: 20,
-    marginBottom: 14,
+    marginTop: -10,
+    marginBottom: 2,
+    letterSpacing: 0.2,
+  },
+  smallCardListContent: {
+    paddingHorizontal: 20,
+    gap: 12,
+    paddingBottom: 10,
+    paddingTop: 10,
   },
   smallCard: {
-    width: 110,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...commonStyles.smallCard,
   },
   smallArtwork: {
-    width: "100%",
-    height: 90,
-    borderRadius: 8,
-    marginBottom: 8,
+    ...commonStyles.smallArtwork,
   },
   smallTrackName: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#1a1a1a",
+    ...commonStyles.smallTrackName,
   },
   smallArtistName: {
-    fontSize: 11,
-    color: "#888",
-    marginTop: 2,
+    ...commonStyles.smallArtistName,
   },
   favoriteList: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    gap: 1,
   },
 });
