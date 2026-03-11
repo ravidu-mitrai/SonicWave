@@ -24,6 +24,14 @@ const historySlice = createSlice({
         ...state.queries.filter((q) => q.toLowerCase() !== query.toLowerCase()),
       ].slice(0, 5);
     },
+    // Remove a single specific query
+    removeQuery: (state, action: PayloadAction<string>) => {
+      state.queries = state.queries.filter((q) => q !== action.payload);
+    },
+    // Clear the entire queries array
+    clearQueries: (state) => {
+      state.queries = [];
+    },
     addTrack: (state, action: PayloadAction<Track>) => {
       // Remove duplicate, add to front, keep top 5
       state.tracks = [
@@ -38,5 +46,5 @@ const historySlice = createSlice({
   },
 });
 
-export const { addQuery, addTrack, setHistory } = historySlice.actions;
+export const { addQuery, removeQuery, clearQueries, addTrack, setHistory } = historySlice.actions;
 export default historySlice.reducer;
