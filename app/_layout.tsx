@@ -66,24 +66,6 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  useEffect(() => {
-    const configureBackgroundAudio = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          staysActiveInBackground: true,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-        });
-        console.log("Background audio mode activated!");
-      } catch (error) {
-        console.error("Failed to set audio mode", error);
-      }
-    };
-
-    configureBackgroundAudio();
-  }, []);
-
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
