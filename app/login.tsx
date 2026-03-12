@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
+import { useRouter } from "expo-router";
 import {
   Alert,
   StatusBar,
@@ -20,6 +21,7 @@ export default function LoginScreen() {
   const colors = Colors[theme];
   const commonStyles = getCommonStyles(colors);
   const styles = getStyles(colors, commonStyles);
+  const router = useRouter();
 
   // INITIALIZE GOOGLE SIGN-IN
   useEffect(() => {
@@ -49,8 +51,7 @@ export default function LoginScreen() {
       // Sign-in the user with the credential
       const userCredential = await auth().signInWithCredential(googleCredential);
       
-      // Temporary alert so we can verify it
-      Alert.alert("Success!", `Welcome to SonicWave, ${userCredential.user.displayName}`);
+      router.replace("/(app)/discover");
 
     } catch (error: any) {
       console.error("Login Failed:", error);
