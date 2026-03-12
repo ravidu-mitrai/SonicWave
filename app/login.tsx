@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   Alert,
@@ -22,18 +22,22 @@ export default function LoginScreen() {
   const commonStyles = getCommonStyles(colors);
   const styles = getStyles(colors, commonStyles);
   const router = useRouter();
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   // INITIALIZE GOOGLE SIGN-IN
   useEffect(() => {
     GoogleSignin.configure({
       // This is the client_id with client_type: 3 
-      webClientId: '43073931111-4av2vgh5eob9p5p6290amsut5pu5ngoh.apps.googleusercontent.com', 
+      webClientId: '43073931888-4av2vgh5eob9p5p6290amsut5pu5ngoh.apps.googleusercontent.com', 
     });
   }, []);
 
   // LOGIN FUNCTION
   const handleGoogleSignIn = async () => {
+    if (isSigningIn) return;
+    
     try {
+      setIsSigningIn(true);
       // Check if the user's Android device has Google Play Services installed
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       
@@ -56,6 +60,8 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error("Login Failed:", error);
       Alert.alert("Login Error", error.message || "Something went wrong.");
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -77,12 +83,15 @@ export default function LoginScreen() {
 
         <View style={styles.authContainer}>
           <TouchableOpacity
-            style={styles.googleButton}
+            style={[styles.googleButton, isSigningIn && { opacity: 0.7 }]}
             activeOpacity={0.8}
             onPress={handleGoogleSignIn}
+            disabled={isSigningIn}
           >
             <Ionicons name="logo-google" size={20} color={colors.background} style={styles.googleIcon} />
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
+            <Text style={styles.googleButtonText}>
+              {isSigningIn ? "Signing In..." : "Continue with Google"}
+            </Text>
           </TouchableOpacity>
           
           <Text style={styles.termsText}>
