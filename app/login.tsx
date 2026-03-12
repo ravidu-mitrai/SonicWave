@@ -13,7 +13,7 @@ import {
 import { Colors, getCommonStyles } from "../constants/Styles";
 
 // IMPORT THE AUTH LIBRARIES
-import auth from '@react-native-firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function LoginScreen() {
@@ -27,7 +27,6 @@ export default function LoginScreen() {
   // INITIALIZE GOOGLE SIGN-IN
   useEffect(() => {
     GoogleSignin.configure({
-      // This is the client_id with client_type: 3 
       webClientId: '43073931888-4av2vgh5eob9p5p6290amsut5pu5ngoh.apps.googleusercontent.com', 
     });
   }, []);
@@ -50,10 +49,10 @@ export default function LoginScreen() {
       }
 
       // Create a Firebase credential using that token
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const googleCredential = GoogleAuthProvider.credential(idToken);
 
       // Sign-in the user with the credential
-      const userCredential = await auth().signInWithCredential(googleCredential);
+      const userCredential = await signInWithCredential(getAuth(), googleCredential);
       
       router.replace("/(app)/discover");
 
